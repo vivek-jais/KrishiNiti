@@ -11,5 +11,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(config.port, () => {
-    console.log(`🌾 KrishiNiti Server running on http://localhost:${config.port}`);
+    console.log(`KrishiNiti Server running on http://localhost:${config.port}`);
 });
