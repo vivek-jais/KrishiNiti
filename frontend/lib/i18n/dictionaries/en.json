@@ -1,0 +1,58 @@
+{
+  "navbar": {
+    "title": "KrishiNiti",
+    "dashboard": "Dashboard",
+    "analyse": "Analyse",
+    "demo": "Demo"
+  },
+  "hero": {
+    "heading": "From Field to Profit — Powered by AI",
+    "sub": "Know when to harvest and where to sell for maximum profit."
+  },
+  "features": {
+    "title": "Features",
+    "list": [
+      "Harvest timing prediction",
+      "Mandi price forecasting",
+      "Transport cost optimization",
+      "Profit ranking",
+      "Satellite crop monitoring",
+      "Weather intelligence"
+    ]
+  },
+  "cta": {
+    "heading": "Increase Farmer Income Today",
+    "button": "Start Demo"
+  },
+  "demo": {
+    "title": "Example Output",
+    "farmer": "Farmer: 50 quintal wheat, Hoshangabad",
+    "recommendation": "Wait 4 days. Sell at Itarsi mandi (42km). Expected gain: ₹7,900"
+  },
+  "footer": {
+    "text": "© 2026 KrishiNiti — Policy to Profit 🇮🇳"
+  },
+  "problem": {
+    "title": "The Problem",
+    "description": "Farmers lack real-time market intelligence, leading to ₹330/quintal price variation and major profit loss."
+  },
+  "stats": {
+    "list": [
+      { "value": "6000+", "label": "Mandis" },
+      { "value": "₹330", "label": "Avg Price Gap" },
+      { "value": "10–25%", "label": "Income Increase" },
+      { "value": "14 Cr+", "label": "Farmers" }
+    ]
+  },
+  "workflow": {
+    "title": "How It Works",
+    "steps": [
+      "Input crop details",
+      "Fetch weather + crop data",
+      "Predict harvest timing",
+      "Analyze mandi prices",
+      "Compute profit",
+      "Give recommendation"
+    ]
+  }
+}
