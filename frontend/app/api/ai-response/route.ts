@@ -7,7 +7,12 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
     const farmerInput = body.query;
+
+    // 🌍 Optional location (works whether frontend sends or not)
+    const city = body.city || null;
+    const state = body.state || null;
 
     if (!farmerInput) {
       return NextResponse.json(
@@ -16,20 +21,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🔥 Inject user input into prompt
-    const finalPrompt = PROMPT.replace(
+    // 🔥 Base prompt
+    let finalPrompt = PROMPT.replace(
       "{{farmer_input}}",
       farmerInput
     );
 
+    // 📍 Only inject location if available
+    if (city || state) {
+      finalPrompt += `
+
+[SYSTEM CONTEXT]
+Farmer location:
+City: ${city ?? "Unknown"}
+State: ${state ?? "Unknown"}
+
+Use this ONLY for:
+- weather estimation
+- crop suitability
+- mandi suggestions
+If user explicitly mentions another location, override this.
+`;
+    }
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview", // more stable
+      model: "gemini-3-flash-preview",
     });
 
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: finalPrompt }] }],
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: finalPrompt }],
+        },
+      ],
       generationConfig: {
-        temperature: 0.7, // lower = more realistic
+        temperature: 0.7,
         topP: 0.9,
         maxOutputTokens: 4096,
         responseMimeType: "application/json",
@@ -38,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     const text = result.response.text();
 
-    // ✅ Parse JSON safely
+    // ✅ Safe JSON parsing
     let parsed;
     try {
       parsed = JSON.parse(text);

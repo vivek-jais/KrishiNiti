@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import LocationAutoFill from "@/components/LocationAutoFill";
 
 /* ─────────────────────────── TYPES ─────────────────────────── */
 
@@ -73,8 +74,6 @@ type AIResponse = {
   };
 };
 
-
-
 /* ─────────────────────── HELPERS ───────────────────────────── */
 
 const INR = (val: number) =>
@@ -85,6 +84,10 @@ const INR = (val: number) =>
   }).format(val);
 
 const pct = (val: number) => `${Math.round(val * 100)}%`;
+
+/* ─────────────────── LOCATION AUTOFILL KEY ─────────────────── */
+
+const LOCATIONIQ_KEY = "pk.e6953260361dea8f4b758c4a2528aefa";
 
 /* ─────────────────── SPARKLINE SVG ─────────────────────────── */
 
@@ -299,6 +302,11 @@ function DemandGauge({ score, color }: { score: number; color: string }) {
 export default function AnalyzePage() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState<AIResponse | null>(null);
+  const [location, setLocation] = useState<{ city: string; state: string } | null>(null);
+  /* ── NEW: location autofill states ── */
+  const [locLoading, setLocLoading] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
+  /* ─────────────────────────────────── */
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "market" | "harvest" | "profit">(
@@ -315,6 +323,58 @@ export default function AnalyzePage() {
     }
   }, [data]);
 
+  /* ── ORIGINAL: callback kept for manual/external use ── */
+  const handleLocationFound = (loc: { city: string; state: string }) => {
+    setLocation(loc);
+  };
+
+  /* ── NEW: automatic geolocation detection ── */
+  const detectLocation = async () => {
+    setLocLoading(true);
+    setLocError(null);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 6000,
+          maximumAge: 0,
+        })
+      );
+      const { latitude, longitude } = pos.coords;
+      const res = await fetch(
+        `https://us1.locationiq.com/v1/reverse?key=${LOCATIONIQ_KEY}&lat=${latitude}&lon=${longitude}&format=json`
+      );
+      const geo = await res.json();
+      const city =
+        geo.address?.city ||
+        geo.address?.town ||
+        geo.address?.village ||
+        geo.address?.county ||
+        geo.address?.state_district ||
+        "";
+      const state = geo.address?.state || "";
+      if (city || state) {
+        // reuse the existing handleLocationFound so both paths stay in sync
+        handleLocationFound({ city, state });
+      } else {
+        setLocError("Location found but city/state could not be determined.");
+      }
+    } catch (err: unknown) {
+      const isGeoError = typeof GeolocationPositionError !== "undefined" &&
+        err instanceof GeolocationPositionError;
+      const msg = isGeoError
+        ? (err as GeolocationPositionError).code === 1
+          ? "Location permission denied. Please allow access in your browser."
+          : "Could not determine your location. Try again."
+        : "Location detection failed. Please try again.";
+      setLocError(msg);
+    } finally {
+      setLocLoading(false);
+    }
+  };
+  /* ────────────────────────────────── */
+
+  /* ── UPDATED: now forwards city/state to the API ── */
   const handleAnalyze = async () => {
     if (!query.trim()) return;
     setLoading(true);
@@ -324,7 +384,11 @@ export default function AnalyzePage() {
       const res = await fetch("/api/ai-response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({
+          query,
+          city: location?.city ?? null,   // NEW
+          state: location?.state ?? null, // NEW
+        }),
       });
       if (!res.ok) throw new Error(`Request failed: ${res.status} ${res.statusText}`);
       const result: AIResponse = await res.json();
@@ -431,7 +495,12 @@ export default function AnalyzePage() {
               >
                 <div style={{ opacity: 0.6, fontSize: 10 }}>Report ID</div>
                 <div style={{ fontWeight: 600 }}>KIF-2025-0415</div>
-                <div style={{ opacity: 0.6, fontSize: 10 }}>Hoshangabad, MP</div>
+                {/* ── UPDATED: shows detected location if available ── */}
+                <div style={{ opacity: 0.6, fontSize: 10 }}>
+                  {location
+                    ? `${location.city}${location.city && location.state ? ", " : ""}${location.state}`
+                    : "Hoshangabad, MP"}
+                </div>
               </div>
               <div
                 style={{
@@ -522,50 +591,131 @@ export default function AnalyzePage() {
             border: "0.5px solid #ddd",
             padding: "16px 18px",
             display: "flex",
-            gap: 10,
-            alignItems: "center",
+            flexDirection: "column",   // NEW: column to stack rows
+            gap: 0,
             marginBottom: 20,
             boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
           }}
         >
-          <span style={{ fontSize: 20 }}>🔍</span>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="e.g. 50 quintal wheat, Hoshangabad MP, harvest in 10 days"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
+          {/* ── Row 1: original search bar (unchanged) ── */}
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <span style={{ fontSize: 20 }}>🔍</span>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="e.g. 50 quintal wheat, Hoshangabad MP, harvest in 10 days"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{
+                flex: 1,
+                border: "0.5px solid #d5d3cc",
+                borderRadius: 7,
+                padding: "10px 14px",
+                fontSize: 13,
+                outline: "none",
+                background: "#fafaf8",
+                color: "#1a1a18",
+                transition: "border-color 0.2s",
+              }}
+            />
+            <button
+              onClick={handleAnalyze}
+              disabled={loading}
+              style={{
+                background: loading ? "#7aadcf" : "#1a3a5c",
+                color: "#fff",
+                border: "none",
+                borderRadius: 7,
+                padding: "10px 22px",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: loading ? "not-allowed" : "pointer",
+                transition: "background 0.2s",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {loading ? "Analyzing…" : "Analyze Crop →"}
+            </button>
+          </div>
+
+          {/* ── NEW Row 2: location autofill strip ── */}
+          <div
             style={{
-              flex: 1,
-              border: "0.5px solid #d5d3cc",
-              borderRadius: 7,
-              padding: "10px 14px",
-              fontSize: 13,
-              outline: "none",
-              background: "#fafaf8",
-              color: "#1a1a18",
-              transition: "border-color 0.2s",
-            }}
-          />
-          <button
-            onClick={handleAnalyze}
-            disabled={loading}
-            style={{
-              background: loading ? "#7aadcf" : "#1a3a5c",
-              color: "#fff",
-              border: "none",
-              borderRadius: 7,
-              padding: "10px 22px",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "background 0.2s",
-              whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginTop: 10,
+              paddingTop: 10,
+              borderTop: "0.5px solid #f0efeb",
+              flexWrap: "wrap",
             }}
           >
-            {loading ? "Analyzing…" : "Analyze Crop →"}
-          </button>
+            {/* Auto-detect button */}
+           <LocationAutoFill onLocationFound={handleLocationFound} />
+
+            {/* Divider label */}
+            <span style={{ fontSize: 11, color: "#bbb" }}>or type manually in query above</span>
+
+            {/* Location badge — shown once location is set (by either method) */}
+            {location && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "#e8f5ee",
+                  border: "0.5px solid #a8d8bc",
+                  borderRadius: 20,
+                  padding: "4px 10px 4px 8px",
+                  fontSize: 12,
+                  color: "#1a5c38",
+                  marginLeft: "auto",
+                }}
+              >
+                <span style={{ fontSize: 13 }}>✅</span>
+                <span style={{ fontWeight: 500 }}>
+                  {location.city}
+                  {location.city && location.state ? ", " : ""}
+                  {location.state}
+                </span>
+                {/* Clear button */}
+                <button
+                  onClick={() => {
+                    setLocation(null);
+                    setLocError(null);
+                  }}
+                  title="Clear location"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: "0 0 0 4px",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    color: "#4a9e6e",
+                    lineHeight: 1,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Hint when no location is set */}
+            {!location && !locLoading && !locError && (
+              <span style={{ fontSize: 11, color: "#aaa" }}>
+                Detected location improves mandi suggestions & weather accuracy
+              </span>
+            )}
+
+            {/* Error */}
+            {locError && (
+              <span style={{ fontSize: 11, color: "#c0392b" }}>⚠️ {locError}</span>
+            )}
+          </div>
+          {/* ── END NEW Row 2 ── */}
         </div>
 
         {error && (
@@ -589,6 +739,8 @@ export default function AnalyzePage() {
             </p>
             <p style={{ fontSize: 12, color: "#999" }}>
               Fetching mandi prices, weather data, and profit projections
+              {/* NEW: show location in loading copy if available */}
+              {location ? ` for ${location.city}, ${location.state}` : ""}
             </p>
             <div
               style={{
