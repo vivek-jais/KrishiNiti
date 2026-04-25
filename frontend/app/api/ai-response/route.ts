@@ -8,6 +8,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const farmerInput = body.query;
+    
+    // Accept city and state from the frontend. Fallback to "Not provided" if the user types it manually instead.
+    const city = body.city || "Not provided";
+    const state = body.state || "Not provided";
 
     if (!farmerInput) {
       return NextResponse.json(
@@ -17,19 +21,23 @@ export async function POST(req: NextRequest) {
     }
 
     // 🔥 Inject user input into prompt
-    const finalPrompt = PROMPT.replace(
+    let finalPrompt = PROMPT.replace(
       "{{farmer_input}}",
       farmerInput
     );
 
+    // 📍 Add the location context to the prompt so Gemini knows where the farmer is!
+    const locationContext = `\n\n[SYSTEM CONTEXT: The farmer's detected device location is City: ${city}, State: ${state}. Use this context for weather, soil, or crop recommendations if they don't manually specify a different location in their query.]`;
+    finalPrompt += locationContext;
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview", // more stable
+      model: "gemini-3-flash-preview", // Note: Adjust model name to your specific version if needed
     });
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: finalPrompt }] }],
       generationConfig: {
-        temperature: 0.7, // lower = more realistic
+        temperature: 0.7, 
         topP: 0.9,
         maxOutputTokens: 4096,
         responseMimeType: "application/json",
