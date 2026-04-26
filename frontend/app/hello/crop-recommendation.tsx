@@ -145,11 +145,11 @@ export default function CropRecommendationPage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 28px" }}>
               {sliders.slice(0, 3).map((s) => (
-                <Slider key={s.key} {...s} value={form[s.key]} onChange={set(s.key)} />
+                <Slider {...s} value={form[s.key]} onChange={set(s.key)} />
               ))}
               <div style={{ gridColumn: "1 / -1", height: "0.5px", background: "#e8f0e8", margin: "4px 0 16px" }} />
               {sliders.slice(3).map((s) => (
-                <Slider key={s.key} {...s} value={form[s.key]} onChange={set(s.key)} />
+                <Slider  {...s} value={form[s.key]} onChange={set(s.key)} />
               ))}
             </div>
 
