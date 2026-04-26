@@ -1,5 +1,5 @@
 "use client";
-
+import { Droplets, Thermometer, CloudRain, FlaskConical } from "lucide-react";
 import { useState } from "react";
 
 /* ─────────────────────── TYPES ─────────────────────────── */
@@ -137,17 +137,54 @@ export default function CropRecommendationPage() {
   };
 
   const fields: {
-    key: keyof CropRecommendationInput;
-    label: string; unit: string; min: number; max: number; step?: number;
-    color: string; icon: string;
+      key: keyof CropRecommendationInput;
+  label: string;
+  unit: string;
+  min: number;
+  max: number;
+  step?: number;
+  color: string;
+   icon: any ; 
   }[] = [
-    { key: "nitrogen",    label: "Nitrogen (N)",   unit: "mg/kg", min: 0,   max: 140,       color: "#3d8c40", icon: "🟢" },
-    { key: "phosphorus",  label: "Phosphorus (P)", unit: "mg/kg", min: 5,   max: 145,       color: "#4a9e6e", icon: "🔵" },
-    { key: "potassium",   label: "Potassium (K)",  unit: "mg/kg", min: 5,   max: 205,       color: "#6db86e", icon: "🟣" },
-    { key: "temperature", label: "Temperature",    unit: "°C",    min: 8,   max: 44, step: 0.5, color: "#e07a3a", icon: "🌡️" },
-    { key: "humidity",    label: "Humidity",       unit: "%",     min: 14,  max: 100,       color: "#4a8ec2", icon: "💧" },
-    { key: "ph",          label: "Soil pH",        unit: "pH",    min: 3.5, max: 10, step: 0.1, color: "#9b6fd0", icon: "⚗️" },
-    { key: "rainfall",    label: "Rainfall",       unit: "mm",    min: 20,  max: 300,       color: "#3a9fc4", icon: "🌧️" },
+    { key: "nitrogen",    label: "Nitrogen (N)",   unit: "mg/kg", min: 0,   max: 140,       color: "#3d8c40", icon: "" },
+    { key: "phosphorus",  label: "Phosphorus (P)", unit: "mg/kg", min: 5,   max: 145,       color: "#4a9e6e", icon: "" },
+    { key: "potassium",   label: "Potassium (K)",  unit: "mg/kg", min: 5,   max: 205,       color: "#6db86e", icon: "" },
+    {
+    key: "humidity",
+    label: "Humidity",
+    unit: "%",
+    min: 14,
+    max: 100,
+    color: "#4a8ec2",
+    icon: <Droplets size={18} />,
+  },
+  {
+    key: "temperature",
+    label: "Temperature",
+    unit: "°C",
+    min: 8,
+    max: 44,
+    color: "#e07a3a",
+    icon: <Thermometer size={18} />,
+  },
+  {
+    key: "rainfall",
+    label: "Rainfall",
+    unit: "mm",
+    min: 20,
+    max: 300,
+    color: "#3a9fc4",
+    icon: <CloudRain size={18} />,
+  },
+  {
+    key: "ph",
+    label: "Soil pH",
+    unit: "pH",
+    min: 3.5,
+    max: 10,
+    color: "#9b6fd0",
+    icon: <FlaskConical size={18} />,
+  },
   ];
 
   return (
